@@ -11,6 +11,8 @@ import AnchoredNubbin from '../__examples__/anchored-nubbin';
 import Base from '../__examples__/base';
 import ButtonGroupExample from '../__examples__/button-group';
 import ButtonExample from '../__examples__/button';
+import FlippedExample from '../__examples__/flipped';
+import ScrolledOverExample from '../__examples__/scrolled-over';
 import LearnMoreExample from '../__examples__/learn-more';
 import WithDelay from '../__examples__/with-delay';
 
@@ -87,6 +89,8 @@ storiesOf(POPOVER_TOOLTIP, module)
 			content,
 		})
 	)
+	.add('Flipped', () => <FlippedExample />)
+	.add('Scrolled Over', () => <ScrolledOverExample />)
 	.add('Alignment (Button)', () =>
 		getPopoverTooltipAlign({
 			id: 'myPopoverId',
