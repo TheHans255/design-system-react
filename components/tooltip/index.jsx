@@ -185,74 +185,6 @@ class Tooltip extends React.Component {
 		this.isUnmounting = true;
 	}
 
-	getAnchoredNubbinStyles() {
-		if (this.props.hasAnchoredNubbin) {
-			const alignment = this.props.align.split(' ')[0];
-			const nubbinContainerStyles = {
-				height: '0',
-				position: 'relative',
-				width: '0',
-			};
-			const nubbinStyles = {
-				backgroundColor: '#16325c',
-				content: '',
-				height: '1rem',
-				position: 'absolute',
-				transform: 'rotate(45deg)',
-				width: '1rem',
-			};
-			const triggerDimensions = {
-				height: this.trigger ? this.trigger.getBoundingClientRect().height : 0,
-				width: this.trigger ? this.trigger.getBoundingClientRect().width : 0,
-			};
-
-			switch (alignment) {
-				case 'bottom': {
-					nubbinContainerStyles.left = `${triggerDimensions.width / 2}px`;
-					nubbinContainerStyles.top = `${triggerDimensions.height}px`;
-					nubbinStyles.left = '-8px';
-					nubbinStyles.top = '3px';
-					break;
-				}
-				case 'left': {
-					nubbinContainerStyles.left = '0';
-					nubbinContainerStyles.top = `${triggerDimensions.height / 2}px`;
-					nubbinStyles.left = '-19px';
-					nubbinStyles.top = '-9px';
-					break;
-				}
-				case 'right': {
-					nubbinContainerStyles.left = `${triggerDimensions.width}px`;
-					nubbinContainerStyles.top = `${triggerDimensions.height / 2}px`;
-					nubbinStyles.left = '3px';
-					nubbinStyles.top = '-9px';
-					break;
-				}
-				default: {
-					nubbinContainerStyles.left = `${triggerDimensions.width / 2}px`;
-					nubbinContainerStyles.top = '0';
-					nubbinStyles.left = '-8px';
-					nubbinStyles.top = '-19px';
-				}
-			}
-
-			return (
-				<React.Fragment>
-					<style>{`#${this.getId()}:after, #${this.getId()}:before {
-	display: none;
-}`}</style>
-					{this.getIsOpen() ? (
-						<div style={nubbinContainerStyles}>
-							<div style={nubbinStyles} />
-						</div>
-					) : null}
-				</React.Fragment>
-			);
-		}
-
-		return null;
-	}
-
 	getContent() {
 		let children;
 		const noChildrenProvided = React.Children.count(this.props.children) === 0;
@@ -311,7 +243,7 @@ class Tooltip extends React.Component {
 
 	getTooltip() {
 		const isOpen = this.getIsOpen();
-		const { align } = this.props;
+		const { align, hasAnchoredNubbin } = this.props;
 
 		// REMOVE AT NEXT BREAKING CHANGE (v1.0 or v0.9)
 		const deprecatedWay = this.props.variant === 'error';
@@ -319,7 +251,8 @@ class Tooltip extends React.Component {
 		return isOpen ? (
 			<Dialog
 				closeOnTabKey
-				hasNubbin
+				hasNubbin={!hasAnchoredNubbin}
+				hasAnchoredNubbin={hasAnchoredNubbin}
 				contentsClassName={classNames(
 					'slds-popover',
 					'slds-popover_tooltip',
@@ -442,7 +375,6 @@ class Tooltip extends React.Component {
 				style={containerStyles}
 				ref={this.saveTriggerRef}
 			>
-				{this.getAnchoredNubbinStyles()}
 				{this.getContent()}
 				{this.getTooltip()}
 			</div>

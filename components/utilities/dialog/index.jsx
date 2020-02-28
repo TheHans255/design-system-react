@@ -7,6 +7,11 @@ import PropTypes from 'prop-types';
 import Popper from 'popper.js';
 import isEqual from 'lodash.isequal';
 
+// ### shortid
+// [npmjs.com/package/shortid](https://www.npmjs.com/package/shortid)
+// shortid is a short, non-sequential, url-friendly, unique id generator
+import shortid from 'shortid';
+
 // ### classNames
 // [github.com/JedWatson/classnames](https://github.com/JedWatson/classnames)
 // This project uses `classnames`, "a simple javascript utility for conditionally
@@ -111,6 +116,11 @@ class Dialog extends React.Component {
 		 */
 		hasNubbin: PropTypes.bool,
 		/**
+		 * Will position the nubbin in the optimal location for the control, rather than at one of the twelve default locations.
+		 * Has no effect if `hasNubbin` is false
+		 */
+		hasAnchoredNubbin: PropTypes.bool,
+		/**
 		 * By default, dialogs will flip their alignment (such as bottom to top) if they extend beyond a boundary element such as a scrolling parent or a window/viewpoint. `hasStaticAlignment` disables this behavior and allows this component to extend beyond boundary elements.
 		 */
 		hasStaticAlignment: PropTypes.bool,
@@ -198,10 +208,16 @@ class Dialog extends React.Component {
 		outsideClickIgnoreClass: 'ignore-react-onclickoutside',
 	};
 
-	state = {
-		triggerPopperJS: false,
-		isOpen: false,
-	};
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			triggerPopperJS: false,
+			isOpen: false,
+		};
+
+		this.generatedId = shortid.generate();
+	}
 
 	componentDidMount() {
 		if (
@@ -394,7 +410,10 @@ class Dialog extends React.Component {
 					return popperData;
 				},
 			},
-			// arrow property can also point to an element
+			arrow: {
+				enabled: this.props.hasNubbin && this.props.hasAnchoredNubbin,
+				element: `#${this.getAnchoredNubbinId}`,
+			},
 		};
 		if (!reference) {
 			console.error('Target node not found!', reference); // eslint-disable-line no-console
@@ -416,6 +435,85 @@ class Dialog extends React.Component {
 			this.popper.destroy();
 		}
 	};
+
+	getAnchoredNubbinId() {
+		return `${this.generatedId}-anchoredNubbin`;
+	}
+
+	getAnchoredNubbin() {
+		const alignment = this.props.align.split(' ')[0];
+		const { popperData } = this.state;
+		const nubbinContainerStyles = {
+			height: '0',
+			position: 'relative',
+			width: '0',
+		};
+		const nubbinStyles = {
+			backgroundColor: '#16325c',
+			content: '',
+			height: '1rem',
+			position: 'absolute',
+			transform: 'rotate(45deg)',
+			width: '1rem',
+		};
+		const triggerDimensions = {
+			height: this.trigger ? this.trigger.getBoundingClientRect().height : 0,
+			width: this.trigger ? this.trigger.getBoundingClientRect().width : 0,
+		};
+
+		let offsetLeft = 0,
+			offsetTop = 0;
+		if (popperData && popperData.offsets.arrow) {
+			offsetLeft = popperData.offsets.arrow.left;
+			offsetTop = popperData.offsets.arrow.top;
+		}
+
+		switch (alignment) {
+			case 'bottom': {
+				nubbinContainerStyles.left = `${triggerDimensions.width / 2 +
+					offsetLeft}px`;
+				nubbinContainerStyles.top = `${triggerDimensions.height + offsetTop}px`;
+				nubbinStyles.left = '-8px';
+				nubbinStyles.top = '3px';
+				break;
+			}
+			case 'left': {
+				nubbinContainerStyles.left = `${offsetLeft}px`;
+				nubbinContainerStyles.top = `${triggerDimensions.height / 2 +
+					offsetTop}px`;
+				nubbinStyles.left = '-19px';
+				nubbinStyles.top = '-9px';
+				break;
+			}
+			case 'right': {
+				nubbinContainerStyles.left = `${triggerDimensions.width +
+					offsetLeft}px`;
+				nubbinContainerStyles.top = `${triggerDimensions.height / 2 +
+					offsetTop}px`;
+				nubbinStyles.left = '3px';
+				nubbinStyles.top = '-9px';
+				break;
+			}
+			default: {
+				nubbinContainerStyles.left = `${triggerDimensions.width / 2 +
+					offsetTop}px`;
+				nubbinContainerStyles.top = `${offsetTop}px`;
+				nubbinStyles.left = '-8px';
+				nubbinStyles.top = '-19px';
+			}
+		}
+
+		return (
+			<React.Fragment>
+				<style>{`#${this.generatedId}:after, #${this.generatedId}:before {
+	display: none;
+}`}</style>
+				<div id={this.getAnchoredNubbinId()} style={nubbinContainerStyles}>
+					<div style={nubbinStyles} />
+				</div>
+			</React.Fragment>
+		);
+	}
 
 	render() {
 		let style = {};
@@ -457,6 +555,11 @@ class Dialog extends React.Component {
 
 		const outerTag = this.props.variant === 'popover' ? 'section' : 'div';
 
+		const children = React.Children.toArray(this.props.children);
+		if (this.props.hasAnchoredNubbin) {
+			children.push(this.getAnchoredNubbin());
+		}
+
 		const contents = React.createElement(
 			outerTag,
 			{
@@ -470,6 +573,7 @@ class Dialog extends React.Component {
 								this.props.position === 'overflowBoundaryElement',
 						},
 						this.props.hasNubbin &&
+							!this.props.hasAnchoredNubbin &&
 							getNubbinClassName(this.props.align, this.state.popperData),
 						this.props.contentsClassName
 					) || undefined,
@@ -484,8 +588,7 @@ class Dialog extends React.Component {
 				tabIndex: this.props.variant === 'popover' ? '-1' : undefined,
 				...this.props.containerProps,
 			},
-
-			this.props.children
+			children
 		);
 
 		const subRenders = {
